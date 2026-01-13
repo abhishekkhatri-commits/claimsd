@@ -1,75 +1,602 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Claims Dashboard</title>
-  <style>
-    body { font-family: system-ui, Arial, sans-serif; margin: 0; padding: 2rem; background:#f6f8fb; color:#0b1320; }
-    .container { max-width: 900px; margin: 0 auto; }
-    header { display:flex; align-items:center; gap:1rem; margin-bottom:1.25rem; }
-    h1 { margin:0; font-size:1.5rem; }
-    .card { background:#fff; border-radius:10px; padding:1rem; box-shadow:0 6px 18px rgba(12,20,40,0.06); margin-bottom:1rem; }
-    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem; margin-top:0.5rem; }
-    .stat { font-size:1.25rem; font-weight:600; }
-    footer { margin-top:2rem; font-size:0.9rem; color:#5b6b7a; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claims Control Tower | AI Powered</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Marked library for parsing Markdown from LLM -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F1F5F9; color: #1E293B; }
+        
+        /* Layout Transitions */
+        .view-section { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Navigation Active State */
+        .nav-item.active { background-color: #E2E8F0; color: #0F172A; border-left: 4px solid #3B82F6; font-weight: 600; }
+        
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #CBD5E1; border-radius: 3px; }
+
+        /* Modal & AI Panel */
+        .modal-overlay { background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
+        
+        /* AI Chat Panel Transitions */
+        #aiPanel { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .ai-message { animation: popIn 0.3s ease-out forwards; }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        
+        /* Markdown Styles within AI Chat */
+        .prose p { margin-bottom: 0.5em; }
+        .prose ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 0.5em; }
+        .prose strong { color: #1E293B; font-weight: 600; }
+        
+        /* Loading Spinner */
+        .typing-indicator span {
+            display: inline-block; width: 6px; height: 6px; background-color: #3B82F6; border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out both; margin: 0 1px;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+    </style>
 </head>
-<body>
-  <div class="container">
-    <header>
-      <h1>Claims Dashboard</h1>
-      <small>Static demo site hosted with GitHub Pages</small>
-    </header>
+<body class="flex h-screen overflow-hidden">
 
-    <div class="card">
-      <strong>Overview</strong>
-      <div class="grid" id="stats">
-        <div class="card">
-          <div class="stat" id="open">—</div>
-          <div>Open claims</div>
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col z-20 shadow-xl hidden md:flex">
+        <div class="p-6 border-b border-slate-100">
+            <h1 class="text-xl font-bold tracking-tight flex items-center gap-2 text-slate-900">
+                <span class="text-blue-600 text-2xl">⚡</span> ClaimsHub
+            </h1>
+            <p class="text-xs text-slate-500 mt-1">Operational Oversight</p>
         </div>
-        <div class="card">
-          <div class="stat" id="closed">—</div>
-          <div>Closed claims</div>
+
+        <nav class="flex-1 overflow-y-auto custom-scroll py-4 space-y-1">
+            <button onclick="switchView('overview')" class="nav-item active w-full text-left px-6 py-3 text-sm text-slate-600 hover:bg-slate-50 transition">
+                <span>📊</span> Executive Overview
+            </button>
+            <button onclick="switchView('operational')" class="nav-item w-full text-left px-6 py-3 text-sm text-slate-600 hover:bg-slate-50 transition">
+                <span>📑</span> Operational Table
+            </button>
+            <button onclick="switchView('carriers')" class="nav-item w-full text-left px-6 py-3 text-sm text-slate-600 hover:bg-slate-50 transition">
+                <span>🚚</span> Carrier Performance
+            </button>
+            <button onclick="switchView('deepdive')" class="nav-item w-full text-left px-6 py-3 text-sm text-slate-600 hover:bg-slate-50 transition">
+                <span>🔬</span> Deep Dive / Root Cause
+            </button>
+        </nav>
+
+        <div class="p-4 bg-slate-50 border-t border-slate-200">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">A</div>
+                <div>
+                    <p class="text-xs font-bold text-slate-700">Admin User</p>
+                    <p class="text-[10px] text-slate-500">Logistics Control</p>
+                </div>
+            </div>
         </div>
-        <div class="card">
-          <div class="stat" id="pending">—</div>
-          <div>Pending</div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 h-full overflow-y-auto bg-slate-50 p-4 md:p-8 custom-scroll relative">
+        
+        <!-- HEADER -->
+        <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-800" id="pageTitle">Executive Overview</h2>
+                <p class="text-sm text-slate-500">Performance against YoY Baseline (2023)</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="bg-white border border-slate-200 px-3 py-1 rounded text-sm font-medium shadow-sm">
+                    Latest Data: <strong>July 2024</strong>
+                </span>
+                <button onclick="triggerExecutiveSummary()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium shadow-md transition flex items-center gap-2">
+                    <span>✨</span> AI Executive Brief
+                </button>
+            </div>
         </div>
-      </div>
+
+        <!-- VIEW 1: OVERVIEW -->
+        <div id="overview" class="view-section active">
+            <!-- KPI CARDS (Data from 'Operational view.csv') -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- KPI 1: CPM -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Claims Per Million (CPM)</p>
+                    <div class="flex items-end gap-2 mt-2">
+                        <h3 class="text-3xl font-bold text-slate-900">1,464</h3>
+                        <span class="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-100">▲ 3.8% YoY</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">vs 1,377 in Jul '23</p>
+                </div>
+                <!-- KPI 2: Value -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Claim Value</p>
+                    <div class="flex items-end gap-2 mt-2">
+                        <h3 class="text-3xl font-bold text-slate-900">€ 3.73M</h3>
+                        <span class="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-100">▲ 15.2% YoY</span>
+                    </div>
+                     <p class="text-xs text-slate-400 mt-2">Driven by Lost in Transit</p>
+                </div>
+                <!-- KPI 3: Claims Volume -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Claims Volume</p>
+                    <div class="flex items-end gap-2 mt-2">
+                        <h3 class="text-3xl font-bold text-slate-900">39,814</h3>
+                        <span class="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-100">▲ 12.5% YoY</span>
+                    </div>
+                     <p class="text-xs text-slate-400 mt-2">Shipment Vol: 27.1M (▲ 8.2%)</p>
+                </div>
+                <!-- KPI 4: Compliance -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Reporting Compliance</p>
+                    <div class="flex items-end gap-2 mt-2">
+                        <h3 class="text-3xl font-bold text-slate-900">91%</h3>
+                        <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100">⚠ 3 Defaults</span>
+                    </div>
+                     <p class="text-xs text-slate-400 mt-2">GLS, CTT, ITL missing reports</p>
+                </div>
+            </div>
+
+            <!-- TREND CHART -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-slate-700">CPM Efficiency Trend (Interactive)</h3>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-blue-600"></span><span class="text-xs text-slate-500">2024 Actual</span>
+                        <span class="w-3 h-3 rounded-full bg-slate-400 ml-2"></span><span class="text-xs text-slate-500">2023 Historic</span>
+                    </div>
+                </div>
+                <div class="relative h-80 w-full">
+                    <canvas id="trendChart"></canvas>
+                </div>
+                <p class="text-center text-xs text-blue-600 mt-2 animate-pulse cursor-pointer">👆 Click on a data point (e.g., July) to see the full operational breakdown</p>
+            </div>
+        </div>
+
+        <!-- VIEW 2: OPERATIONAL TABLE -->
+        <div id="operational" class="view-section">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
+                <table class="w-full text-sm text-left min-w-[600px]">
+                    <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                        <tr>
+                            <th class="p-4">Metric / KPI</th>
+                            <th class="p-4 text-right">July 2024 (Actual)</th>
+                            <th class="p-4 text-right">MoM Var (vs Jun)</th>
+                            <th class="p-4 text-right">YoY Var (vs Jul '23)</th>
+                            <th class="p-4 text-center">Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr class="hover:bg-slate-50">
+                            <td class="p-4 font-medium text-slate-700">Total Outbound Shipments</td>
+                            <td class="p-4 text-right font-mono">27,192,050</td>
+                            <td class="p-4 text-right text-green-600">▲ 1.6%</td>
+                            <td class="p-4 text-right text-green-600">▲ 8.2%</td>
+                            <td class="p-4 text-center">↗</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="p-4 font-medium text-slate-700">Total Claims Volume (#)</td>
+                            <td class="p-4 text-right font-mono">39,814</td>
+                            <td class="p-4 text-right text-red-600">▲ 4.2%</td>
+                            <td class="p-4 text-right text-red-600">▲ 12.5%</td>
+                            <td class="p-4 text-center text-red-500">↗ Alert</td>
+                        </tr>
+                         <tr class="hover:bg-slate-50 bg-blue-50/30">
+                            <td class="p-4 font-medium text-slate-700">Claims Per Million (CPM)</td>
+                            <td class="p-4 text-right font-mono font-bold">1,464</td>
+                            <td class="p-4 text-right text-red-600">▲ 2.5%</td>
+                            <td class="p-4 text-right text-red-600">▲ 3.8%</td>
+                            <td class="p-4 text-center text-red-500">↗</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50">
+                            <td class="p-4 font-medium text-slate-700">Total Claim Value (€)</td>
+                            <td class="p-4 text-right font-mono">€ 3,737,367</td>
+                            <td class="p-4 text-right text-red-600">▲ 6.1%</td>
+                            <td class="p-4 text-right text-red-600">▲ 15.2%</td>
+                            <td class="p-4 text-center">↗</td>
+                        </tr>
+                         <tr class="hover:bg-slate-50">
+                            <td class="p-4 font-medium text-slate-700">LIT Ratio (Lost in Transit)</td>
+                            <td class="p-4 text-right font-mono">48.5%</td>
+                            <td class="p-4 text-right text-slate-400">-- 0.1%</td>
+                            <td class="p-4 text-right text-red-600">▲ 5.0%</td>
+                            <td class="p-4 text-center">→</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VIEW 3: CARRIERS -->
+        <div id="carriers" class="view-section">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Carrier Comparison (Data from 'DHL vs Hermes.csv') -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-700 mb-2">Carrier Efficiency: DHL vs Hermes</h3>
+                    <p class="text-xs text-slate-500 mb-4">Volume vs Claims Comparison (YTD)</p>
+                    <div class="relative h-64 w-full">
+                        <canvas id="carrierCompChart"></canvas>
+                    </div>
+                    <div class="mt-4 p-3 bg-slate-50 rounded text-xs text-slate-600 border border-slate-100">
+                        <strong>Insight:</strong> Hermes has 57% fewer claims than DHL despite significant volume, but maintains a flat €103 claim value policy.
+                    </div>
+                </div>
+
+                <!-- Reporting Compliance Heatmap -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-700 mb-2">Carrier Reporting Matrix</h3>
+                    <p class="text-xs text-slate-500 mb-4">RAG Status of Monthly Reports</p>
+                    <div class="grid grid-cols-4 gap-2 text-center text-xs font-semibold text-white">
+                         <div class="p-2 rounded bg-emerald-500">DHL</div>
+                         <div class="p-2 rounded bg-emerald-500">HERMES</div>
+                         <div class="p-2 rounded bg-amber-500">DPD</div>
+                         <div class="p-2 rounded bg-emerald-500">UPS</div>
+                         <div class="p-2 rounded bg-emerald-500">FEDEX</div>
+                         <div class="p-2 rounded bg-red-500">GLS</div>
+                         <div class="p-2 rounded bg-emerald-500">BPOST</div>
+                         <div class="p-2 rounded bg-amber-500">POST AT</div>
+                         <div class="p-2 rounded bg-emerald-500">COLIS</div>
+                         <div class="p-2 rounded bg-red-500">CTT</div>
+                         <div class="p-2 rounded bg-emerald-500">SEUR</div>
+                         <div class="p-2 rounded bg-red-500">ITL</div>
+                    </div>
+                    <div class="mt-4 text-xs text-slate-500 flex gap-4 justify-center">
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-emerald-500"></span> On Time</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-amber-500"></span> Partial Data</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-red-500"></span> Default</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 4: DEEP DIVE -->
+        <div id="deepdive" class="view-section">
+             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Rejection Reasons (Data from 'reject claims reasons.csv') -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-700 mb-4">Top Rejection Reasons</h3>
+                    <div class="relative h-64 w-full">
+                        <canvas id="rejectionChart"></canvas>
+                    </div>
+                </div>
+                 <!-- Category Split (Data from 'Claim Category.csv') -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-700 mb-4">Claim Category Composition</h3>
+                    <div class="relative h-64 w-full">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FLOATING AI ACTION BUTTON -->
+    <button onclick="toggleAIPanel()" class="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full shadow-xl flex items-center justify-center text-white hover:scale-110 transition z-50 group">
+        <span class="text-2xl group-hover:animate-pulse">✨</span>
+    </button>
+
+    <!-- AI COPILOT SIDEBAR -->
+    <div id="aiPanel" class="fixed top-0 right-0 h-full w-full md:w-96 bg-white shadow-2xl z-40 transform translate-x-full border-l border-slate-200 flex flex-col">
+        <!-- Header -->
+        <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+            <h3 class="font-bold text-slate-800 flex items-center gap-2"><span>✨</span> Claims Copilot</h3>
+            <button onclick="toggleAIPanel()" class="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
+        <!-- Chat Area -->
+        <div id="aiChatHistory" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 custom-scroll">
+            <div class="ai-message bg-white p-3 rounded-lg rounded-tl-none border border-slate-200 text-sm text-slate-600 shadow-sm">
+                Hello! I'm your Logistics AI Assistant. I have access to your monthly claim reports. How can I help?
+            </div>
+        </div>
+        <!-- Input Area -->
+        <div class="p-4 bg-white border-t border-slate-200">
+             <div class="flex gap-2">
+                <input type="text" id="aiInput" placeholder="Ask about trends, CPM..." class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button onclick="sendUserMessage()" class="bg-blue-600 text-white rounded-lg px-3 py-2 text-sm hover:bg-blue-700 transition">➤</button>
+             </div>
+             <p class="text-[10px] text-slate-400 mt-2 text-center">Powered by Gemini 2.5 Flash</p>
+        </div>
     </div>
 
-    <div class="card">
-      <strong>Recent activity</strong>
-      <ul id="activity">
-        <li>Loading demo activity…</li>
-      </ul>
+    <!-- DRILL DOWN MODAL -->
+    <div id="modalOverlay" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden transform transition-all scale-95" id="modalContent">
+            <!-- Header -->
+            <div class="bg-slate-50 border-b border-slate-200 p-6 flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800" id="mTitle">July 2024 Details</h3>
+                    <p class="text-sm text-slate-500">Deep dive into selected period</p>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+            </div>
+            <!-- Body -->
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6" id="mBody">
+                <!-- Injected via JS -->
+            </div>
+        </div>
     </div>
 
-    <footer>
-      This is a static example. Replace with your app or static site generator build output.
-    </footer>
-  </div>
+    <script>
+        const apiKey = ""; // Set your Gemini API Key here if not using the environment variable
 
-  <script>
-    // Demo client-side data — replace with real data or remove
-    const demo = {
-      open: 12,
-      closed: 239,
-      pending: 5,
-      activity: [
-        "Claim #A342 updated",
-        "New claim #A348 submitted",
-        "Claim #A300 closed"
-      ]
-    };
+        // --- 1. AI LOGIC & GEMINI INTEGRATION ---
+        
+        const dataContext = {
+            "Jul_2024": { cpm: 1464, claimValue: "3.73M", vol: 39814, trend: "Up 4.2%", topDefect: "Lost in Transit" },
+            "Compliance": { defaulters: ["GLS", "CTT", "ITL"], status: "91%" },
+            "Carriers": { "DHL": { vol: "High", trend: "Increasing" }, "Hermes": { vol: "Medium", trend: "Stable" } }
+        };
 
-    document.getElementById('open').textContent = demo.open;
-    document.getElementById('closed').textContent = demo.closed;
-    document.getElementById('pending').textContent = demo.pending;
-    const actEl = document.getElementById('activity');
-    actEl.innerHTML = demo.activity.map(i => `<li>${i}</li>`).join('');
-  </script>
+        async function callGemini(userPrompt, systemContext = "") {
+            if (!apiKey) {
+                alert("Please add your Gemini API Key in the code to use AI features.");
+                return "Error: No API Key.";
+            }
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const finalPrompt = `
+                System Context: You are a Logistics Claims Expert Assistant for a Dashboard. 
+                Data Available: ${JSON.stringify(dataContext)}. 
+                ${systemContext}
+                
+                User Request: ${userPrompt}
+            `;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: finalPrompt }] }]
+                    })
+                });
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text;
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                return "I'm having trouble connecting to the network right now. Please try again.";
+            }
+        }
+
+        // Feature: Executive Summary
+        async function triggerExecutiveSummary() {
+            toggleAIPanel(true);
+            addAiMessage("Generating Executive Brief...", true);
+            const summary = await callGemini(
+                "Write a concise, professional Executive Summary for the Board regarding July 2024 Claims Performance. Focus on the CPM increase and the €3.73M exposure. Use bullet points for risks.",
+                "Format using Markdown."
+            );
+            // Remove loading msg
+            const history = document.getElementById('aiChatHistory');
+            history.removeChild(history.lastChild);
+            addAiMessage(summary);
+        }
+
+        // Feature: Draft Carrier Email
+        async function draftCarrierEmail(carrierName, issueType) {
+            closeModal();
+            toggleAIPanel(true);
+            addAiMessage(`Drafting compliance notice for ${carrierName}...`, true);
+            
+            const prompt = `Draft a formal but polite email to ${carrierName}. 
+            Subject: Immediate Action Required - ${issueType}.
+            Context: They are showing a trend of ${issueType} in July 2024. 
+            Request a root cause analysis within 3 business days.`;
+
+            const draft = await callGemini(prompt, "Format as an email draft.");
+            
+            const history = document.getElementById('aiChatHistory');
+            history.removeChild(history.lastChild);
+            addAiMessage(draft);
+        }
+
+        // Feature: Chat Interface
+        function toggleAIPanel(forceOpen = false) {
+            const panel = document.getElementById('aiPanel');
+            if (forceOpen) {
+                panel.classList.remove('translate-x-full');
+            } else {
+                panel.classList.toggle('translate-x-full');
+            }
+        }
+
+        function addAiMessage(text, isLoading = false) {
+            const history = document.getElementById('aiChatHistory');
+            const div = document.createElement('div');
+            
+            if (isLoading) {
+                div.className = 'ai-message bg-blue-50 p-3 rounded-lg border border-blue-100 text-sm self-start typing-indicator';
+                div.innerHTML = '<span></span><span></span><span></span>';
+            } else {
+                div.className = 'ai-message bg-white p-3 rounded-lg rounded-tl-none border border-slate-200 text-sm text-slate-700 shadow-sm prose';
+                // Use Marked.js to parse markdown
+                div.innerHTML = marked.parse(text); 
+            }
+            history.appendChild(div);
+            history.scrollTop = history.scrollHeight;
+        }
+
+        function addUserMessage(text) {
+            const history = document.getElementById('aiChatHistory');
+            const div = document.createElement('div');
+            div.className = 'bg-blue-600 text-white p-3 rounded-lg rounded-tr-none text-sm self-end shadow-sm mb-4 ml-8';
+            div.innerText = text;
+            history.appendChild(div);
+            history.scrollTop = history.scrollHeight;
+        }
+
+        async function sendUserMessage() {
+            const input = document.getElementById('aiInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            addUserMessage(text);
+            input.value = '';
+            
+            addAiMessage("Thinking...", true);
+            const response = await callGemini(text);
+            
+            const history = document.getElementById('aiChatHistory');
+            history.removeChild(history.lastChild); // Remove loader
+            addAiMessage(response);
+        }
+
+        document.getElementById('aiInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') sendUserMessage();
+        });
+
+
+        // --- 2. EXISTING NAVIGATION & DATA ---
+        function switchView(id) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            const titles = {
+                'overview': 'Executive Overview',
+                'operational': 'Operational Table',
+                'carriers': 'Carrier Performance',
+                'deepdive': 'Root Cause Analysis'
+            };
+            document.getElementById('pageTitle').innerText = titles[id];
+        }
+
+        const monthData = {
+            "Jul": {
+                shipments: "27,192,050",
+                claims: "39,814",
+                cpm: "1,464",
+                topIssue: "Lost in Transit (48.5%)",
+                carriers: [
+                    { name: "DHL DE", claims: "20,439", trend: "▲" },
+                    { name: "Hermes DE", claims: "8,941", trend: "▼" }
+                ]
+            },
+            "Jun": {
+                shipments: "26,752,688",
+                claims: "30,799",
+                cpm: "1,306",
+                topIssue: "Damaged Delivery (35%)",
+                carriers: [
+                    { name: "DHL DE", claims: "17,934", trend: "▲" },
+                    { name: "Hermes DE", claims: "4,644", trend: "▲" }
+                ]
+            }
+        };
+
+        const modal = document.getElementById('modalOverlay');
+        const mBody = document.getElementById('mBody');
+        const mTitle = document.getElementById('mTitle');
+
+        function openModal(monthLabel) {
+            const data = monthData[monthLabel] || monthData['Jul']; 
+            mTitle.innerText = `${monthLabel} 2024 Performance`;
+            
+            mBody.innerHTML = `
+                <div class="space-y-4">
+                    <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                        <p class="text-xs font-bold text-blue-800 uppercase">Monthly Shipments</p>
+                        <p class="text-2xl font-bold text-slate-800">${data.shipments}</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        <p class="text-xs font-bold text-slate-500 uppercase">Claims Volume</p>
+                        <p class="text-2xl font-bold text-slate-800">${data.claims}</p>
+                    </div>
+                    <div class="p-4 bg-red-50 rounded-lg border border-red-100">
+                        <p class="text-xs font-bold text-red-800 uppercase">Primary Category</p>
+                        <p class="text-lg font-bold text-slate-800">${data.topIssue}</p>
+                    </div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-lg p-4">
+                    <h4 class="font-bold text-slate-700 mb-3 text-sm border-b pb-2">Top Carrier Breakdown</h4>
+                    <table class="w-full text-sm">
+                        ${data.carriers.map(c => `
+                        <tr class="border-b last:border-0 group">
+                            <td class="py-2 text-slate-600">${c.name}</td>
+                            <td class="py-2 font-mono text-right font-bold">${c.claims}</td>
+                            <td class="py-2 text-right text-xs">${c.trend}</td>
+                            <td class="py-2 text-right">
+                                <button onclick="draftCarrierEmail('${c.name}', 'High Claim Volume')" class="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded hover:bg-indigo-100 transition">
+                                    ✨ Email
+                                </button>
+                            </td>
+                        </tr>`).join('')}
+                    </table>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+            document.getElementById('modalContent').classList.remove('scale-95');
+            document.getElementById('modalContent').classList.add('scale-100');
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+            document.getElementById('modalContent').classList.add('scale-95');
+        }
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // --- 3. CHARTS ---
+        const ctxTrend = document.getElementById('trendChart').getContext('2d');
+        const trendChart = new Chart(ctxTrend, {
+            type: 'line',
+            data: {
+                labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct"],
+                datasets: [
+                    { label: '2024 Actual CPM', data: [1360, 1350, 1242, 1141, 1256, 1306, 1464, null, null, null], borderColor: '#2563EB', backgroundColor: 'rgba(37, 99, 235, 0.1)', borderWidth: 3, pointBackgroundColor: '#fff', pointBorderColor: '#2563EB', pointRadius: 6, pointHoverRadius: 9, fill: true, tension: 0.3 },
+                    { label: '2023 Historic', data: [1510, 1707, 1593, 1532, 1432, 1330, 1377, 1524, 1377, 1457], borderColor: '#94A3B8', borderWidth: 2, borderDash: [5,5], pointRadius: 0, tension: 0.3 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                onClick: (e, activeEls) => { if (activeEls.length > 0) { const idx = activeEls[0].index; openModal(trendChart.data.labels[idx]); } },
+                plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+                scales: { x: { grid: { display: false } }, y: { grid: { borderDash: [2, 4] } } }
+            }
+        });
+
+        new Chart(document.getElementById('carrierCompChart'), {
+            type: 'bar',
+            data: {
+                labels: ['DHL DE', 'Hermes DE', 'Post AT', 'Others'],
+                datasets: [
+                    { label: 'Shipment Volume Share', data: [50, 20, 15, 15], backgroundColor: '#E2E8F0' },
+                    { label: 'Claims Volume Share', data: [65, 10, 12, 13], backgroundColor: '#3B82F6' }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true } } }
+        });
+
+        new Chart(document.getElementById('rejectionChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Operational Deficiency', 'Damaged (No Photos)', 'Insufficient Packaging', 'Force Majeure'],
+                datasets: [{ label: 'Rejection Count', data: [850, 420, 210, 150], backgroundColor: ['#64748B', '#94A3B8', '#CBD5E1', '#E2E8F0'], borderRadius: 4 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' }
+        });
+
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Lost in Transit', 'Damaged', 'DNR', 'Returns'],
+                datasets: [{ data: [48, 22, 18, 12], backgroundColor: ['#2563EB', '#F59E0B', '#F43F5E', '#10B981'], borderWidth: 0 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right' } } }
+        });
+    </script>
 </body>
 </html>

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Claims Dashboard</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 0; padding: 2rem; background:#f6f8fb; color:#0b1320; }
+    .container { max-width: 900px; margin: 0 auto; }
+    header { display:flex; align-items:center; gap:1rem; margin-bottom:1.25rem; }
+    h1 { margin:0; font-size:1.5rem; }
+    .card { background:#fff; border-radius:10px; padding:1rem; box-shadow:0 6px 18px rgba(12,20,40,0.06); margin-bottom:1rem; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem; margin-top:0.5rem; }
+    .stat { font-size:1.25rem; font-weight:600; }
+    footer { margin-top:2rem; font-size:0.9rem; color:#5b6b7a; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Claims Dashboard</h1>
+      <small>Static demo site hosted with GitHub Pages</small>
+    </header>
+
+    <div class="card">
+      <strong>Overview</strong>
+      <div class="grid" id="stats">
+        <div class="card">
+          <div class="stat" id="open">—</div>
+          <div>Open claims</div>
+        </div>
+        <div class="card">
+          <div class="stat" id="closed">—</div>
+          <div>Closed claims</div>
+        </div>
+        <div class="card">
+          <div class="stat" id="pending">—</div>
+          <div>Pending</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <strong>Recent activity</strong>
+      <ul id="activity">
+        <li>Loading demo activity…</li>
+      </ul>
+    </div>
+
+    <footer>
+      This is a static example. Replace with your app or static site generator build output.
+    </footer>
+  </div>
+
+  <script>
+    // Demo client-side data — replace with real data or remove
+    const demo = {
+      open: 12,
+      closed: 239,
+      pending: 5,
+      activity: [
+        "Claim #A342 updated",
+        "New claim #A348 submitted",
+        "Claim #A300 closed"
+      ]
+    };
+
+    document.getElementById('open').textContent = demo.open;
+    document.getElementById('closed').textContent = demo.closed;
+    document.getElementById('pending').textContent = demo.pending;
+    const actEl = document.getElementById('activity');
+    actEl.innerHTML = demo.activity.map(i => `<li>${i}</li>`).join('');
+  </script>
+</body>
+</html>

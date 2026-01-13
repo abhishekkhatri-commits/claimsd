@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claims Control Tower | AI Powered</title>
+    <title>Claims Control Tower | Operational View</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Marked library for parsing Markdown from LLM -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #F1F5F9; color: #1E293B; }
+        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; color: #1E293B; }
         
         /* Layout Transitions */
         .view-section { display: none; animation: fadeIn 0.3s ease-in-out; }
@@ -24,27 +22,8 @@
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background-color: #CBD5E1; border-radius: 3px; }
 
-        /* Modal & AI Panel */
+        /* Modal Overlay */
         .modal-overlay { background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
-        
-        /* AI Chat Panel Transitions */
-        #aiPanel { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .ai-message { animation: popIn 0.3s ease-out forwards; }
-        @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        
-        /* Markdown Styles within AI Chat */
-        .prose p { margin-bottom: 0.5em; }
-        .prose ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 0.5em; }
-        .prose strong { color: #1E293B; font-weight: 600; }
-        
-        /* Loading Spinner */
-        .typing-indicator span {
-            display: inline-block; width: 6px; height: 6px; background-color: #3B82F6; border-radius: 50%;
-            animation: typing 1.4s infinite ease-in-out both; margin: 0 1px;
-        }
-        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
-        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
@@ -97,17 +76,17 @@
                 <span class="bg-white border border-slate-200 px-3 py-1 rounded text-sm font-medium shadow-sm">
                     Latest Data: <strong>July 2024</strong>
                 </span>
-                <button onclick="triggerExecutiveSummary()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium shadow-md transition flex items-center gap-2">
-                    <span>✨</span> AI Executive Brief
+                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium shadow-md transition">
+                    Export Report
                 </button>
             </div>
         </div>
 
         <!-- VIEW 1: OVERVIEW -->
         <div id="overview" class="view-section active">
-            <!-- KPI CARDS (Data from 'Operational view.csv') -->
+            <!-- KPI CARDS -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <!-- KPI 1: CPM -->
+                <!-- KPI 1 -->
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition">
                     <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Claims Per Million (CPM)</p>
                     <div class="flex items-end gap-2 mt-2">
@@ -116,7 +95,7 @@
                     </div>
                     <p class="text-xs text-slate-400 mt-2">vs 1,377 in Jul '23</p>
                 </div>
-                <!-- KPI 2: Value -->
+                <!-- KPI 2 -->
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition">
                     <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Claim Value</p>
                     <div class="flex items-end gap-2 mt-2">
@@ -125,7 +104,7 @@
                     </div>
                      <p class="text-xs text-slate-400 mt-2">Driven by Lost in Transit</p>
                 </div>
-                <!-- KPI 3: Claims Volume -->
+                <!-- KPI 3 -->
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition">
                     <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Claims Volume</p>
                     <div class="flex items-end gap-2 mt-2">
@@ -134,7 +113,7 @@
                     </div>
                      <p class="text-xs text-slate-400 mt-2">Shipment Vol: 27.1M (▲ 8.2%)</p>
                 </div>
-                <!-- KPI 4: Compliance -->
+                <!-- KPI 4 -->
                 <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition">
                     <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Reporting Compliance</p>
                     <div class="flex items-end gap-2 mt-2">
@@ -218,7 +197,7 @@
         <!-- VIEW 3: CARRIERS -->
         <div id="carriers" class="view-section">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Carrier Comparison (Data from 'DHL vs Hermes.csv') -->
+                <!-- Carrier Comparison -->
                 <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                     <h3 class="font-bold text-slate-700 mb-2">Carrier Efficiency: DHL vs Hermes</h3>
                     <p class="text-xs text-slate-500 mb-4">Volume vs Claims Comparison (YTD)</p>
@@ -260,14 +239,14 @@
         <!-- VIEW 4: DEEP DIVE -->
         <div id="deepdive" class="view-section">
              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Rejection Reasons (Data from 'reject claims reasons.csv') -->
+                <!-- Rejection Reasons -->
                 <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                     <h3 class="font-bold text-slate-700 mb-4">Top Rejection Reasons</h3>
                     <div class="relative h-64 w-full">
                         <canvas id="rejectionChart"></canvas>
                     </div>
                 </div>
-                 <!-- Category Split (Data from 'Claim Category.csv') -->
+                 <!-- Category Split -->
                 <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                     <h3 class="font-bold text-slate-700 mb-4">Claim Category Composition</h3>
                     <div class="relative h-64 w-full">
@@ -278,34 +257,6 @@
         </div>
 
     </main>
-
-    <!-- FLOATING AI ACTION BUTTON -->
-    <button onclick="toggleAIPanel()" class="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full shadow-xl flex items-center justify-center text-white hover:scale-110 transition z-50 group">
-        <span class="text-2xl group-hover:animate-pulse">✨</span>
-    </button>
-
-    <!-- AI COPILOT SIDEBAR -->
-    <div id="aiPanel" class="fixed top-0 right-0 h-full w-full md:w-96 bg-white shadow-2xl z-40 transform translate-x-full border-l border-slate-200 flex flex-col">
-        <!-- Header -->
-        <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-            <h3 class="font-bold text-slate-800 flex items-center gap-2"><span>✨</span> Claims Copilot</h3>
-            <button onclick="toggleAIPanel()" class="text-slate-400 hover:text-slate-600">✕</button>
-        </div>
-        <!-- Chat Area -->
-        <div id="aiChatHistory" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 custom-scroll">
-            <div class="ai-message bg-white p-3 rounded-lg rounded-tl-none border border-slate-200 text-sm text-slate-600 shadow-sm">
-                Hello! I'm your Logistics AI Assistant. I have access to your monthly claim reports. How can I help?
-            </div>
-        </div>
-        <!-- Input Area -->
-        <div class="p-4 bg-white border-t border-slate-200">
-             <div class="flex gap-2">
-                <input type="text" id="aiInput" placeholder="Ask about trends, CPM..." class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button onclick="sendUserMessage()" class="bg-blue-600 text-white rounded-lg px-3 py-2 text-sm hover:bg-blue-700 transition">➤</button>
-             </div>
-             <p class="text-[10px] text-slate-400 mt-2 text-center">Powered by Gemini 2.5 Flash</p>
-        </div>
-    </div>
 
     <!-- DRILL DOWN MODAL -->
     <div id="modalOverlay" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
@@ -326,136 +277,7 @@
     </div>
 
     <script>
-        const apiKey = ""; // Set your Gemini API Key here if not using the environment variable
-
-        // --- 1. AI LOGIC & GEMINI INTEGRATION ---
-        
-        const dataContext = {
-            "Jul_2024": { cpm: 1464, claimValue: "3.73M", vol: 39814, trend: "Up 4.2%", topDefect: "Lost in Transit" },
-            "Compliance": { defaulters: ["GLS", "CTT", "ITL"], status: "91%" },
-            "Carriers": { "DHL": { vol: "High", trend: "Increasing" }, "Hermes": { vol: "Medium", trend: "Stable" } }
-        };
-
-        async function callGemini(userPrompt, systemContext = "") {
-            if (!apiKey) {
-                alert("Please add your Gemini API Key in the code to use AI features.");
-                return "Error: No API Key.";
-            }
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-            const finalPrompt = `
-                System Context: You are a Logistics Claims Expert Assistant for a Dashboard. 
-                Data Available: ${JSON.stringify(dataContext)}. 
-                ${systemContext}
-                
-                User Request: ${userPrompt}
-            `;
-
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: finalPrompt }] }]
-                    })
-                });
-                const data = await response.json();
-                return data.candidates[0].content.parts[0].text;
-            } catch (error) {
-                console.error("Gemini API Error:", error);
-                return "I'm having trouble connecting to the network right now. Please try again.";
-            }
-        }
-
-        // Feature: Executive Summary
-        async function triggerExecutiveSummary() {
-            toggleAIPanel(true);
-            addAiMessage("Generating Executive Brief...", true);
-            const summary = await callGemini(
-                "Write a concise, professional Executive Summary for the Board regarding July 2024 Claims Performance. Focus on the CPM increase and the €3.73M exposure. Use bullet points for risks.",
-                "Format using Markdown."
-            );
-            // Remove loading msg
-            const history = document.getElementById('aiChatHistory');
-            history.removeChild(history.lastChild);
-            addAiMessage(summary);
-        }
-
-        // Feature: Draft Carrier Email
-        async function draftCarrierEmail(carrierName, issueType) {
-            closeModal();
-            toggleAIPanel(true);
-            addAiMessage(`Drafting compliance notice for ${carrierName}...`, true);
-            
-            const prompt = `Draft a formal but polite email to ${carrierName}. 
-            Subject: Immediate Action Required - ${issueType}.
-            Context: They are showing a trend of ${issueType} in July 2024. 
-            Request a root cause analysis within 3 business days.`;
-
-            const draft = await callGemini(prompt, "Format as an email draft.");
-            
-            const history = document.getElementById('aiChatHistory');
-            history.removeChild(history.lastChild);
-            addAiMessage(draft);
-        }
-
-        // Feature: Chat Interface
-        function toggleAIPanel(forceOpen = false) {
-            const panel = document.getElementById('aiPanel');
-            if (forceOpen) {
-                panel.classList.remove('translate-x-full');
-            } else {
-                panel.classList.toggle('translate-x-full');
-            }
-        }
-
-        function addAiMessage(text, isLoading = false) {
-            const history = document.getElementById('aiChatHistory');
-            const div = document.createElement('div');
-            
-            if (isLoading) {
-                div.className = 'ai-message bg-blue-50 p-3 rounded-lg border border-blue-100 text-sm self-start typing-indicator';
-                div.innerHTML = '<span></span><span></span><span></span>';
-            } else {
-                div.className = 'ai-message bg-white p-3 rounded-lg rounded-tl-none border border-slate-200 text-sm text-slate-700 shadow-sm prose';
-                // Use Marked.js to parse markdown
-                div.innerHTML = marked.parse(text); 
-            }
-            history.appendChild(div);
-            history.scrollTop = history.scrollHeight;
-        }
-
-        function addUserMessage(text) {
-            const history = document.getElementById('aiChatHistory');
-            const div = document.createElement('div');
-            div.className = 'bg-blue-600 text-white p-3 rounded-lg rounded-tr-none text-sm self-end shadow-sm mb-4 ml-8';
-            div.innerText = text;
-            history.appendChild(div);
-            history.scrollTop = history.scrollHeight;
-        }
-
-        async function sendUserMessage() {
-            const input = document.getElementById('aiInput');
-            const text = input.value.trim();
-            if (!text) return;
-
-            addUserMessage(text);
-            input.value = '';
-            
-            addAiMessage("Thinking...", true);
-            const response = await callGemini(text);
-            
-            const history = document.getElementById('aiChatHistory');
-            history.removeChild(history.lastChild); // Remove loader
-            addAiMessage(response);
-        }
-
-        document.getElementById('aiInput').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') sendUserMessage();
-        });
-
-
-        // --- 2. EXISTING NAVIGATION & DATA ---
+        // --- 1. NAVIGATION LOGIC ---
         function switchView(id) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById(id).classList.add('active');
@@ -471,6 +293,7 @@
             document.getElementById('pageTitle').innerText = titles[id];
         }
 
+        // --- 2. DATA (Using Static Data from your files) ---
         const monthData = {
             "Jul": {
                 shipments: "27,192,050",
@@ -494,11 +317,13 @@
             }
         };
 
+        // --- 3. MODAL LOGIC ---
         const modal = document.getElementById('modalOverlay');
         const mBody = document.getElementById('mBody');
         const mTitle = document.getElementById('mTitle');
 
         function openModal(monthLabel) {
+            // Default to July if the specific month isn't in our sample data
             const data = monthData[monthLabel] || monthData['Jul']; 
             mTitle.innerText = `${monthLabel} 2024 Performance`;
             
@@ -525,11 +350,6 @@
                             <td class="py-2 text-slate-600">${c.name}</td>
                             <td class="py-2 font-mono text-right font-bold">${c.claims}</td>
                             <td class="py-2 text-right text-xs">${c.trend}</td>
-                            <td class="py-2 text-right">
-                                <button onclick="draftCarrierEmail('${c.name}', 'High Claim Volume')" class="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded hover:bg-indigo-100 transition">
-                                    ✨ Email
-                                </button>
-                            </td>
                         </tr>`).join('')}
                     </table>
                 </div>
@@ -549,25 +369,54 @@
             if (e.target === modal) closeModal();
         });
 
-        // --- 3. CHARTS ---
+        // --- 4. CHARTS CONFIGURATION ---
+        
+        // Main Trend Chart
         const ctxTrend = document.getElementById('trendChart').getContext('2d');
         const trendChart = new Chart(ctxTrend, {
             type: 'line',
             data: {
                 labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct"],
                 datasets: [
-                    { label: '2024 Actual CPM', data: [1360, 1350, 1242, 1141, 1256, 1306, 1464, null, null, null], borderColor: '#2563EB', backgroundColor: 'rgba(37, 99, 235, 0.1)', borderWidth: 3, pointBackgroundColor: '#fff', pointBorderColor: '#2563EB', pointRadius: 6, pointHoverRadius: 9, fill: true, tension: 0.3 },
-                    { label: '2023 Historic', data: [1510, 1707, 1593, 1532, 1432, 1330, 1377, 1524, 1377, 1457], borderColor: '#94A3B8', borderWidth: 2, borderDash: [5,5], pointRadius: 0, tension: 0.3 }
+                    { 
+                        label: '2024 Actual CPM', 
+                        data: [1360, 1350, 1242, 1141, 1256, 1306, 1464, null, null, null], 
+                        borderColor: '#2563EB', 
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)', 
+                        borderWidth: 3, 
+                        pointBackgroundColor: '#fff', 
+                        pointBorderColor: '#2563EB', 
+                        pointRadius: 6, 
+                        pointHoverRadius: 9, 
+                        fill: true, 
+                        tension: 0.3 
+                    },
+                    { 
+                        label: '2023 Historic', 
+                        data: [1510, 1707, 1593, 1532, 1432, 1330, 1377, 1524, 1377, 1457], 
+                        borderColor: '#94A3B8', 
+                        borderWidth: 2, 
+                        borderDash: [5,5], 
+                        pointRadius: 0, 
+                        tension: 0.3 
+                    }
                 ]
             },
             options: {
-                responsive: true, maintainAspectRatio: false,
-                onClick: (e, activeEls) => { if (activeEls.length > 0) { const idx = activeEls[0].index; openModal(trendChart.data.labels[idx]); } },
+                responsive: true, 
+                maintainAspectRatio: false,
+                onClick: (e, activeEls) => { 
+                    if (activeEls.length > 0) { 
+                        const idx = activeEls[0].index; 
+                        openModal(trendChart.data.labels[idx]); 
+                    } 
+                },
                 plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
                 scales: { x: { grid: { display: false } }, y: { grid: { borderDash: [2, 4] } } }
             }
         });
 
+        // Carrier Volume Comparison
         new Chart(document.getElementById('carrierCompChart'), {
             type: 'bar',
             data: {
@@ -580,20 +429,31 @@
             options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true } } }
         });
 
+        // Rejection Reasons
         new Chart(document.getElementById('rejectionChart'), {
             type: 'bar',
             data: {
                 labels: ['Operational Deficiency', 'Damaged (No Photos)', 'Insufficient Packaging', 'Force Majeure'],
-                datasets: [{ label: 'Rejection Count', data: [850, 420, 210, 150], backgroundColor: ['#64748B', '#94A3B8', '#CBD5E1', '#E2E8F0'], borderRadius: 4 }]
+                datasets: [{ 
+                    label: 'Rejection Count', 
+                    data: [850, 420, 210, 150], 
+                    backgroundColor: ['#64748B', '#94A3B8', '#CBD5E1', '#E2E8F0'], 
+                    borderRadius: 4 
+                }]
             },
             options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y' }
         });
 
+        // Category Composition
         new Chart(document.getElementById('categoryChart'), {
             type: 'doughnut',
             data: {
                 labels: ['Lost in Transit', 'Damaged', 'DNR', 'Returns'],
-                datasets: [{ data: [48, 22, 18, 12], backgroundColor: ['#2563EB', '#F59E0B', '#F43F5E', '#10B981'], borderWidth: 0 }]
+                datasets: [{ 
+                    data: [48, 22, 18, 12], 
+                    backgroundColor: ['#2563EB', '#F59E0B', '#F43F5E', '#10B981'], 
+                    borderWidth: 0 
+                }]
             },
             options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'right' } } }
         });

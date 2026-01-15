@@ -3,278 +3,536 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claims Executive | YoY Comparison</title>
+    <title>Claims Control Tower | Integrated View</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; color: #1E293B; }
         
-        /* Card Styling */
-        .kpi-card {
-            background: white;
-            border: 1px solid #E2E8F0;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
-        }
-        .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        
-        /* Variance Badges */
-        .badge {
-            display: inline-flex; align-items: center; padding: 2px 8px;
-            border-radius: 9999px; font-size: 0.75rem; font-weight: 600;
-        }
-        .badge-bad { background-color: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
-        .badge-good { background-color: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
-        
-        /* Table Styling */
-        .comparison-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        .comparison-table th { background: #F1F5F9; padding: 10px; text-align: right; border: 1px solid #E2E8F0; color: #64748B; font-weight: 600; }
-        .comparison-table td { padding: 8px 10px; text-align: right; border: 1px solid #E2E8F0; color: #334155; font-family: monospace; }
-        .comparison-table .metric-col { text-align: left; background: #F8FAFC; font-weight: 600; width: 180px; }
-        .comparison-table .group-header { text-align: center; background: #E2E8F0; font-weight: 700; color: #1E293B; }
+        /* Navigation & Tabs */
+        .view-section { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .nav-link { border-left: 4px solid transparent; transition: all 0.2s; }
+        .nav-link.active { background-color: #E2E8F0; color: #0F172A; border-left-color: #2563EB; font-weight: 600; }
+        .nav-link:hover:not(.active) { background-color: #F1F5F9; }
+
+        /* Excel-Style Tables */
+        .excel-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; white-space: nowrap; }
+        .excel-table th { background-color: #F1F5F9; border: 1px solid #CBD5E1; padding: 10px; text-align: right; color: #475569; font-weight: 700; }
+        .excel-table th.sticky-col { position: sticky; left: 0; z-index: 10; background-color: #F8FAFC; border-right: 2px solid #CBD5E1; text-align: left; }
+        .excel-table td { border: 1px solid #E2E8F0; padding: 8px 10px; text-align: right; color: #334155; }
+        .excel-table td.sticky-col { position: sticky; left: 0; z-index: 10; background-color: #FFFFFF; border-right: 2px solid #CBD5E1; text-align: left; font-weight: 500; }
+        .excel-table tr:hover td { background-color: #F8FAFC; }
+        .excel-table tr:hover td.sticky-col { background-color: #F1F5F9; }
+
+        /* Analysis Cards */
+        .insight-card { border-left: 4px solid #3B82F6; background: #EFF6FF; padding: 16px; border-radius: 0 8px 8px 0; }
+        .insight-alert { border-left: 4px solid #EF4444; background: #FEF2F2; padding: 16px; border-radius: 0 8px 8px 0; }
+
+        .custom-scroll { overflow-x: auto; scrollbar-width: thin; scrollbar-color: #CBD5E1 #F1F5F9; }
     </style>
 </head>
-<body class="p-6 md:p-10">
+<body class="flex h-screen overflow-hidden">
 
-    <div class="max-w-7xl mx-auto">
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="w-72 bg-white border-r border-slate-200 flex flex-col z-20 shadow-xl hidden md:flex">
+        <div class="p-6 border-b border-slate-100">
+            <h1 class="text-xl font-bold tracking-tight flex items-center gap-2 text-slate-900">
+                <span class="text-blue-600 text-2xl">⚡</span> ClaimsHub
+            </h1>
+            <p class="text-xs text-slate-500 mt-1">Integrated Dashboard</p>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+            <div class="px-6 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-2">Executive</div>
+            <button onclick="switchView('executive')" class="nav-link active w-full text-left px-6 py-3 text-sm text-slate-600">
+                <span>📊</span> YoY Executive View
+            </button>
+            <button onclick="switchView('trends')" class="nav-link w-full text-left px-6 py-3 text-sm text-slate-600">
+                <span>📈</span> Monthly Trends (Linear)
+            </button>
+
+            <div class="px-6 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">Tabular Reports</div>
+            <button onclick="switchView('ytd_matrix')" class="nav-link w-full text-left px-6 py-3 text-sm text-slate-600">
+                <span>🗓️</span> YTD Monthly Progress
+            </button>
+            <button onclick="switchView('operational')" class="nav-link w-full text-left px-6 py-3 text-sm text-slate-600">
+                <span>📑</span> Operational View
+            </button>
+
+            <div class="px-6 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">Deep Dives</div>
+            <button onclick="switchView('categories')" class="nav-link w-full text-left px-6 py-3 text-sm text-slate-600">
+                <span>📦</span> Category Analysis (Why?)
+            </button>
+            <button onclick="switchView('carriers')" class="nav-link w-full text-left px-6 py-3 text-sm text-slate-600">
+                <span>🚚</span> Carrier & Market Impact
+            </button>
+        </nav>
+        
+        <div class="p-4 bg-slate-50 border-t border-slate-200 text-[10px] text-slate-400">
+            Based on: July 2024 KPI Reporting
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 h-full overflow-y-auto bg-slate-50 p-4 md:p-8 relative custom-scroll">
         
         <!-- HEADER -->
-        <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4 border-b border-slate-200 pb-4">
+        <div class="flex justify-between items-end mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    <span class="text-blue-600">⚡</span> Executive Overview: YoY Performance
-                </h1>
-                <p class="text-sm text-slate-500 mt-1">Comparing <strong>2024 Actuals</strong> vs <strong>2023 Baseline</strong></p>
+                <h2 class="text-2xl font-bold text-slate-800" id="pageTitle">Executive Overview</h2>
+                <p class="text-sm text-slate-500">Period: <strong>July 2024</strong> (vs July 2023)</p>
             </div>
-            <div class="flex items-center gap-3">
-                <span class="px-3 py-1 bg-white border border-slate-300 rounded text-sm font-medium text-slate-600 shadow-sm">
-                    Current Period: <strong>July 2024</strong>
+            <div class="flex gap-2">
+                <span class="bg-white border border-slate-200 px-3 py-1 rounded text-sm font-medium shadow-sm flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span> Live Data
                 </span>
-                <button class="px-4 py-1.5 bg-blue-600 text-white rounded text-sm font-medium shadow hover:bg-blue-700 transition">
-                    Export Report
-                </button>
             </div>
         </div>
 
-        <!-- ROW 1: YoY KPI CARDS -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            
-            <!-- CPM -->
-            <div class="kpi-card">
-                <div class="flex justify-between items-start mb-2">
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Claims Per Million</p>
-                    <span class="badge badge-bad">▲ 6.3% YoY</span>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <h3 class="text-3xl font-bold text-slate-900">1,464</h3>
-                    <span class="text-sm text-slate-400">vs 1,377</span>
-                </div>
-                <div class="mt-3 w-full bg-slate-100 rounded-full h-1.5">
-                    <div class="bg-blue-600 h-1.5 rounded-full" style="width: 75%"></div>
-                </div>
-                <p class="text-[10px] text-slate-400 mt-2 text-right">Target: < 1,300</p>
-            </div>
-
-            <!-- Claim Value -->
-            <div class="kpi-card">
-                <div class="flex justify-between items-start mb-2">
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Claim Value</p>
-                    <span class="badge badge-bad">▲ 15.2% YoY</span>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <h3 class="text-3xl font-bold text-slate-900">€ 3.73M</h3>
-                    <span class="text-sm text-slate-400">vs € 3.24M</span>
-                </div>
-                <div class="mt-3 w-full bg-slate-100 rounded-full h-1.5">
-                    <div class="bg-blue-600 h-1.5 rounded-full" style="width: 85%"></div>
-                </div>
-                <p class="text-[10px] text-slate-400 mt-2 text-right">Driven by LIT Increase</p>
-            </div>
-
-            <!-- Volume -->
-            <div class="kpi-card">
-                <div class="flex justify-between items-start mb-2">
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Claims Volume</p>
-                    <span class="badge badge-bad">▲ 12.5% YoY</span>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <h3 class="text-3xl font-bold text-slate-900">39,814</h3>
-                    <span class="text-sm text-slate-400">vs 35,400</span>
-                </div>
-                <div class="mt-3 w-full bg-slate-100 rounded-full h-1.5">
-                    <div class="bg-blue-600 h-1.5 rounded-full" style="width: 65%"></div>
-                </div>
-                <p class="text-[10px] text-slate-400 mt-2 text-right">Shipment Vol up 8%</p>
-            </div>
-
-            <!-- Refund Rate -->
-            <div class="kpi-card">
-                <div class="flex justify-between items-start mb-2">
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Refund Rate</p>
-                    <span class="badge badge-good">▲ 5.0% MoM</span>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <h3 class="text-3xl font-bold text-slate-900">42.8%</h3>
-                    <span class="text-sm text-slate-400">vs 37.8%</span>
-                </div>
-                <div class="mt-3 w-full bg-slate-100 rounded-full h-1.5">
-                    <div class="bg-green-500 h-1.5 rounded-full" style="width: 42%"></div>
-                </div>
-                <p class="text-[10px] text-slate-400 mt-2 text-right">Recovery Improving</p>
-            </div>
-        </div>
-
-        <!-- ROW 2: GRAPHICAL COMPARISON -->
-        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h3 class="text-lg font-bold text-slate-800">Monthly Efficiency Trend (CPM)</h3>
-                    <p class="text-sm text-slate-500">Visualizing the performance gap between 2024 and 2023</p>
-                </div>
-                <div class="flex items-center gap-4 text-sm">
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-blue-600"></span>
-                        <span class="font-semibold text-slate-700">2024 Actual</span>
+        <!-- ================= SECTION 1: EXECUTIVE YoY VIEW ================= -->
+        <div id="executive" class="view-section active">
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+                <!-- CPM -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <p class="text-xs font-bold text-slate-400 uppercase">Claims Per Million</p>
+                        <span class="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-100">▲ 6.3% YoY</span>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-slate-300"></span>
-                        <span class="font-semibold text-slate-500">2023 Baseline</span>
+                    <div class="mt-2 flex items-baseline gap-2">
+                        <h3 class="text-3xl font-bold text-slate-900">1,464</h3>
+                        <span class="text-sm text-slate-400">vs 1,377</span>
+                    </div>
+                </div>
+                <!-- Value -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <p class="text-xs font-bold text-slate-400 uppercase">Claim Value</p>
+                        <span class="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-100">▲ 15.2% YoY</span>
+                    </div>
+                    <div class="mt-2 flex items-baseline gap-2">
+                        <h3 class="text-3xl font-bold text-slate-900">€ 3.73M</h3>
+                        <span class="text-sm text-slate-400">vs € 3.24M</span>
+                    </div>
+                </div>
+                <!-- Volume -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <p class="text-xs font-bold text-slate-400 uppercase">Volume</p>
+                        <span class="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-100">▲ 12.5% YoY</span>
+                    </div>
+                    <div class="mt-2 flex items-baseline gap-2">
+                        <h3 class="text-3xl font-bold text-slate-900">39,814</h3>
+                        <span class="text-sm text-slate-400">vs 35,400</span>
+                    </div>
+                </div>
+                <!-- Refund -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex justify-between items-start">
+                        <p class="text-xs font-bold text-slate-400 uppercase">Refund Rate</p>
+                        <span class="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded border border-green-100">▲ 5.0% MoM</span>
+                    </div>
+                    <div class="mt-2 flex items-baseline gap-2">
+                        <h3 class="text-3xl font-bold text-slate-900">42.8%</h3>
+                        <span class="text-sm text-slate-400">vs 37.8%</span>
                     </div>
                 </div>
             </div>
-            <div class="relative h-80 w-full">
-                <canvas id="yoyChart"></canvas>
+
+            <!-- Main Executive Chart -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-slate-700">YoY Performance Gap (2024 vs 2023)</h3>
+                    <div class="flex gap-4 text-sm">
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 bg-blue-600 rounded-full"></span> 2024 Actual</div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 bg-slate-300 rounded-full"></span> 2023 Baseline</div>
+                    </div>
+                </div>
+                <div class="relative h-80 w-full">
+                    <canvas id="execChart"></canvas>
+                </div>
             </div>
         </div>
 
-        <!-- ROW 3: DETAILED COMPARISON MATRIX (EXCEL REPLICA) -->
-        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h3 class="text-lg font-bold text-slate-800 mb-4">Performance Matrix: 2024 vs 2023</h3>
-            <div class="overflow-x-auto">
-                <table class="comparison-table">
-                    <thead>
-                        <tr>
-                            <th rowspan="2" class="metric-col">Metric</th>
-                            <th colspan="2" class="group-header">July (Single Month)</th>
-                            <th colspan="2" class="group-header bg-slate-200">Year-to-Date (Jan-Jul)</th>
-                            <th rowspan="2">Variance (YTD)</th>
-                        </tr>
-                        <tr>
-                            <th>2023</th>
-                            <th class="border-b-2 border-blue-500">2024</th>
-                            <th class="bg-slate-50">2023</th>
-                            <th class="bg-slate-50 border-b-2 border-blue-500">2024</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="metric-col">Shipments</td>
-                            <td>25.1M</td>
-                            <td class="font-bold text-slate-800">27.1M</td>
-                            <td class="bg-slate-50">168.2M</td>
-                            <td class="bg-slate-50 font-bold text-slate-800">182.9M</td>
-                            <td class="text-green-600 font-bold">+8.7%</td>
-                        </tr>
-                        <tr>
-                            <td class="metric-col">Claims Volume</td>
-                            <td>34,580</td>
-                            <td class="font-bold text-red-700">39,814</td>
-                            <td class="bg-slate-50">218,400</td>
-                            <td class="bg-slate-50 font-bold text-red-700">232,469</td>
-                            <td class="text-red-600 font-bold">+6.4%</td>
-                        </tr>
-                         <tr>
-                            <td class="metric-col">CPM (Claims/Million)</td>
-                            <td>1,377</td>
-                            <td class="font-bold text-red-700">1,464</td>
-                            <td class="bg-slate-50">1,298</td>
-                            <td class="bg-slate-50 font-bold text-red-700">1,300</td>
-                            <td class="text-red-600 font-bold">+0.1%</td>
-                        </tr>
-                        <tr>
-                            <td class="metric-col">Claim Value (€)</td>
-                            <td>3.24M</td>
-                            <td class="font-bold text-red-700">3.73M</td>
-                            <td class="bg-slate-50">18.4M</td>
-                            <td class="bg-slate-50 font-bold text-red-700">20.6M</td>
-                            <td class="text-red-600 font-bold">+11.9%</td>
-                        </tr>
-                        <tr>
-                            <td class="metric-col">Refund Value (€)</td>
-                            <td>1.1M</td>
-                            <td class="font-bold text-green-700">1.45M</td>
-                            <td class="bg-slate-50">6.2M</td>
-                            <td class="bg-slate-50 font-bold text-green-700">7.5M</td>
-                            <td class="text-green-600 font-bold">+20.9%</td>
-                        </tr>
-                    </tbody>
-                </table>
+        <!-- ================= SECTION 2: MONTHLY TRENDS (LINEAR) ================= -->
+        <div id="trends" class="view-section">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Trend 1: CPM -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-700 mb-4">Claims Per Million Trend</h3>
+                    <div class="relative h-64 w-full"><canvas id="trendCpm"></canvas></div>
+                </div>
+                <!-- Trend 2: Value -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-700 mb-4">Total Claim Value Trend (€)</h3>
+                    <div class="relative h-64 w-full"><canvas id="trendValue"></canvas></div>
+                </div>
+                 <!-- Trend 3: Refund -->
+                 <div class="col-span-1 lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-700 mb-4">Refund Rate Evolution</h3>
+                    <div class="relative h-64 w-full"><canvas id="trendRefund"></canvas></div>
+                </div>
             </div>
         </div>
 
-    </div>
+        <!-- ================= SECTION 3: YTD MONTHLY PROGRESS (MATRIX) ================= -->
+        <div id="ytd_matrix" class="view-section">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between">
+                    <h3 class="font-bold text-slate-700">YTD Monthly Progress Matrix</h3>
+                    <span class="text-xs text-slate-500">Replicating: 2024 KPI Reporting final.csv</span>
+                </div>
+                <div class="custom-scroll">
+                    <table class="excel-table">
+                        <thead>
+                            <tr>
+                                <th class="sticky-col w-48">Metric</th>
+                                <th>Jan</th>
+                                <th>Feb</th>
+                                <th>Mar</th>
+                                <th>Apr</th>
+                                <th>May</th>
+                                <th>Jun</th>
+                                <th class="bg-blue-50 border-2 border-blue-200 text-blue-800">Jul</th>
+                                <th>Aug</th>
+                                <th class="bg-slate-200">Total YTD</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="sticky-col">Outbound Shipments</td>
+                                <td>26,251,178</td>
+                                <td>21,565,324</td>
+                                <td>23,422,655</td>
+                                <td>26,752,688</td>
+                                <td>27,192,050</td>
+                                <td>26,450,112</td>
+                                <td class="bg-blue-50 font-bold">27,192,050</td>
+                                <td>-</td>
+                                <td class="bg-slate-100 font-bold">178,826,057</td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col">Total Claims (#)</td>
+                                <td>38,679</td>
+                                <td>27,124</td>
+                                <td>28,235</td>
+                                <td>30,562</td>
+                                <td>37,256</td>
+                                <td>30,799</td>
+                                <td class="bg-blue-50 font-bold text-red-600">39,814</td>
+                                <td>-</td>
+                                <td class="bg-slate-100 font-bold">232,469</td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col">CPM</td>
+                                <td>1,471</td>
+                                <td>1,257</td>
+                                <td>1,205</td>
+                                <td>1,142</td>
+                                <td>1,370</td>
+                                <td>1,164</td>
+                                <td class="bg-blue-50 font-bold text-red-600">1,464</td>
+                                <td>-</td>
+                                <td class="bg-slate-100 font-bold">1,300</td>
+                            </tr>
+                             <tr>
+                                <td class="sticky-col">Claim Value (€)</td>
+                                <td>3.16M</td>
+                                <td>2.34M</td>
+                                <td>2.61M</td>
+                                <td>2.67M</td>
+                                <td>3.26M</td>
+                                <td>2.85M</td>
+                                <td class="bg-blue-50 font-bold text-red-600">3.73M</td>
+                                <td>-</td>
+                                <td class="bg-slate-100 font-bold">20.62M</td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col">Avg Value (€)</td>
+                                <td>82</td>
+                                <td>86</td>
+                                <td>93</td>
+                                <td>87</td>
+                                <td>88</td>
+                                <td>92</td>
+                                <td class="bg-blue-50 font-bold">94</td>
+                                <td>-</td>
+                                <td class="bg-slate-100 font-bold">89</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SECTION 4: OPERATIONAL VIEW ================= -->
+        <div id="operational" class="view-section">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b border-slate-200">
+                    <h3 class="font-bold text-slate-700">Operational Metric View</h3>
+                </div>
+                <div class="custom-scroll">
+                    <table class="excel-table">
+                        <thead>
+                            <tr>
+                                <th class="sticky-col w-64">Metric</th>
+                                <th>YTD 2023</th>
+                                <th>YTD 2024</th>
+                                <th class="bg-blue-50">Jul 2024</th>
+                                <th>Status</th>
+                                <th>MoM %</th>
+                                <th>YoY %</th>
+                                <th>Trend</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="sticky-col">Total Shipments</td>
+                                <td>158.0M</td>
+                                <td>182.9M</td>
+                                <td class="bg-blue-50 font-bold">27.1M</td>
+                                <td class="text-center text-green-600">●</td>
+                                <td class="text-green-600">+1.6%</td>
+                                <td class="text-green-600">+8.2%</td>
+                                <td>↗</td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col">Total Claims</td>
+                                <td>209,234</td>
+                                <td>232,469</td>
+                                <td class="bg-blue-50 font-bold text-red-600">39,814</td>
+                                <td class="text-center text-red-600">●</td>
+                                <td class="text-red-600">+4.2%</td>
+                                <td class="text-red-600">+12.5%</td>
+                                <td>↗</td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col">CPM</td>
+                                <td>1,324</td>
+                                <td>1,300</td>
+                                <td class="bg-blue-50 font-bold text-red-600">1,464</td>
+                                <td class="text-center text-red-600">●</td>
+                                <td class="text-red-600">+2.5%</td>
+                                <td class="text-red-600">+3.8%</td>
+                                <td>↗</td>
+                            </tr>
+                             <tr>
+                                <td class="sticky-col">Recovered Value (€)</td>
+                                <td>6.2M</td>
+                                <td>7.5M</td>
+                                <td class="bg-blue-50 font-bold text-green-600">1.59M</td>
+                                <td class="text-center text-green-600">●</td>
+                                <td class="text-green-600">+8.4%</td>
+                                <td class="text-red-600">-2.1%</td>
+                                <td>↗</td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col">LIT Ratio</td>
+                                <td>42.1%</td>
+                                <td>45.8%</td>
+                                <td class="bg-blue-50 font-bold">48.5%</td>
+                                <td class="text-center text-amber-500">●</td>
+                                <td class="text-slate-500">0.0%</td>
+                                <td class="text-red-600">+5.0%</td>
+                                <td>→</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SECTION 5: DEEP DIVE - CATEGORIES ================= -->
+        <div id="categories" class="view-section">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Visual -->
+                <div class="col-span-1 lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-700 mb-4">Impact Analysis: Category Breakdown</h3>
+                    <div class="relative h-72 w-full"><canvas id="catChart"></canvas></div>
+                </div>
+
+                <!-- Analysis Text -->
+                <div class="col-span-1">
+                    <div class="insight-alert mb-4">
+                        <h4 class="font-bold text-red-800 text-sm uppercase mb-2">Primary Impact: Lost in Transit (LIT)</h4>
+                        <p class="text-sm text-slate-700 mb-2"><strong>Impact:</strong> LIT contributes 48.5% of total claim value (€1.8M in July).</p>
+                        <p class="text-sm text-slate-700"><strong>Why?</strong> Operational deficiencies identified in sorting hubs (No Scan events). Missing legal statements from carriers preventing claim filing.</p>
+                    </div>
+                    <div class="insight-card">
+                        <h4 class="font-bold text-blue-800 text-sm uppercase mb-2">Secondary: Did Not Receive (DnR)</h4>
+                        <p class="text-sm text-slate-700 mb-2"><strong>Impact:</strong> 18% of Total Volume.</p>
+                        <p class="text-sm text-slate-700"><strong>Why?</strong> Increase in "Safe Place" delivery disputes. Customer claiming non-receipt despite carrier POD.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= SECTION 6: DEEP DIVE - CARRIERS ================= -->
+        <div id="carriers" class="view-section">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Visual Comparison -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-700 mb-2">Market Analysis: DHL vs Hermes</h3>
+                    <div class="relative h-64 w-full"><canvas id="carrierChart"></canvas></div>
+                </div>
+
+                <!-- Analysis Text -->
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-700 mb-4">Contribution Analysis</h3>
+                    
+                    <div class="mb-4 border-b border-slate-100 pb-4">
+                        <h4 class="font-bold text-slate-800 text-sm">Top Contributor: DHL DE</h4>
+                        <ul class="text-sm text-slate-600 mt-2 list-disc list-inside">
+                            <li><strong>Share:</strong> 65% of Claims Volume.</li>
+                            <li><strong>Why High?</strong> Represents 50% of shipments. High "Lost in Transit" rate in cross-border flows.</li>
+                            <li><strong>Refunds:</strong> Variable refund rate (Avg €85).</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-sm">Contrast: Hermes DE</h4>
+                        <ul class="text-sm text-slate-600 mt-2 list-disc list-inside">
+                            <li><strong>Share:</strong> 10% of Claims Volume.</li>
+                            <li><strong>Why Lower?</strong> Stronger scanning compliance at last mile.</li>
+                            <li><strong>Refunds:</strong> Flat rate policy (€103). Higher average refund value per claim than DHL.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Carrier Table -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b border-slate-200">
+                    <h3 class="font-bold text-slate-700">Carrier Performance & Reporting Status</h3>
+                </div>
+                 <div class="custom-scroll">
+                    <table class="excel-table">
+                        <thead>
+                            <tr>
+                                <th class="sticky-col">Carrier</th>
+                                <th>Claims Vol</th>
+                                <th>Claim Rate</th>
+                                <th>Status (RAG)</th>
+                                <th>Avg Refund</th>
+                                <th>Top Defect</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="sticky-col">DHL DE</td>
+                                <td>20,439</td>
+                                <td>0.19%</td>
+                                <td class="text-center"><span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">GREEN</span></td>
+                                <td>€ 85</td>
+                                <td>Lost in Transit</td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col">HERMES DE</td>
+                                <td>8,941</td>
+                                <td>1.09%</td>
+                                <td class="text-center"><span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">GREEN</span></td>
+                                <td>€ 103</td>
+                                <td>Damaged</td>
+                            </tr>
+                            <tr>
+                                <td class="sticky-col">GLS</td>
+                                <td>1,400</td>
+                                <td>0.14%</td>
+                                <td class="text-center"><span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs font-bold">RED</span></td>
+                                <td>-</td>
+                                <td>No Report</td>
+                            </tr>
+                             <tr>
+                                <td class="sticky-col">POST AT</td>
+                                <td>2,100</td>
+                                <td>0.11%</td>
+                                <td class="text-center"><span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-xs font-bold">AMBER</span></td>
+                                <td>€ 90</td>
+                                <td>Partial Data</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
 
     <script>
-        // CHART CONFIGURATION
-        const ctx = document.getElementById('yoyChart').getContext('2d');
-        new Chart(ctx, {
+        // --- Navigation ---
+        function switchView(id) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            const titles = {
+                'executive': 'Executive YoY View',
+                'trends': 'Monthly Trends (Linear)',
+                'ytd_matrix': 'YTD Monthly Progress',
+                'operational': 'Operational View',
+                'categories': 'Category Analysis',
+                'carriers': 'Carrier & Market Analysis'
+            };
+            document.getElementById('pageTitle').innerText = titles[id];
+        }
+
+        // --- Chart Configuration ---
+        const commonOptions = { responsive: true, maintainAspectRatio: false };
+
+        // 1. Executive Chart
+        new Chart(document.getElementById('execChart'), {
             type: 'line',
             data: {
                 labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
                 datasets: [
-                    {
-                        label: '2024 Actual CPM',
-                        data: [1360, 1350, 1242, 1141, 1256, 1306, 1464, null, null], // Data from 2024 KPI File
-                        borderColor: '#2563EB', // Blue 600
-                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                        borderWidth: 3,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: '#2563EB',
-                        pointRadius: 6,
-                        fill: true,
-                        tension: 0.3
-                    },
-                    {
-                        label: '2023 Baseline CPM',
-                        data: [1510, 1707, 1593, 1532, 1432, 1330, 1377, 1524, 1377], // Data from 2023 KPI File
-                        borderColor: '#CBD5E1', // Slate 300
-                        borderWidth: 2,
-                        borderDash: [5, 5],
-                        pointRadius: 3,
-                        pointBackgroundColor: '#CBD5E1',
-                        tension: 0.3
-                    }
+                    { label: '2024 Actual', data: [1360, 1350, 1242, 1141, 1256, 1306, 1464, null, null], borderColor: '#2563EB', backgroundColor: 'rgba(37, 99, 235, 0.1)', borderWidth: 3, fill: true, tension: 0.3 },
+                    { label: '2023 Baseline', data: [1510, 1707, 1593, 1532, 1432, 1330, 1377, 1524, 1377], borderColor: '#94A3B8', borderDash: [5,5], borderWidth: 2, tension: 0.3 }
                 ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        backgroundColor: '#1E293B',
-                        padding: 12,
-                        titleFont: { size: 13 },
-                        bodyFont: { size: 13 }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        grid: { borderDash: [2, 4], color: '#F1F5F9' },
-                        title: { display: true, text: 'Claims Per Million (CPM)' }
-                    },
-                    x: {
-                        grid: { display: false }
-                    }
-                }
-            }
+            }, options: commonOptions
         });
+
+        // 2. Trend Charts
+        const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
+        new Chart(document.getElementById('trendCpm'), {
+            type: 'line',
+            data: { labels: labels, datasets: [{ label: 'CPM 2024', data: [1360, 1350, 1242, 1141, 1256, 1306, 1464], borderColor: '#2563EB' }] }, options: commonOptions
+        });
+        new Chart(document.getElementById('trendValue'), {
+            type: 'line',
+            data: { labels: labels, datasets: [{ label: 'Value (€M)', data: [3.16, 2.34, 2.61, 2.67, 3.26, 2.85, 3.73], borderColor: '#EF4444' }] }, options: commonOptions
+        });
+        new Chart(document.getElementById('trendRefund'), {
+            type: 'line',
+            data: { labels: labels, datasets: [{ label: 'Refund Rate %', data: [33, 35, 36, 40, 39, 38, 42.8], borderColor: '#10B981' }] }, options: commonOptions
+        });
+
+        // 3. Category Chart
+        new Chart(document.getElementById('catChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Lost in Transit', 'Damaged', 'DnR', 'Returns'],
+                datasets: [{ data: [48.5, 22, 18, 11.5], backgroundColor: ['#2563EB', '#F59E0B', '#EF4444', '#10B981'], borderWidth: 0 }]
+            }, options: { ...commonOptions, cutout: '70%', plugins: { legend: { position: 'right' } } }
+        });
+
+        // 4. Carrier Chart
+        new Chart(document.getElementById('carrierChart'), {
+            type: 'bar',
+            data: {
+                labels: ['DHL DE', 'Hermes DE', 'Post AT', 'Others'],
+                datasets: [
+                    { label: 'Shipment Vol %', data: [50, 20, 15, 15], backgroundColor: '#E2E8F0' },
+                    { label: 'Claims Vol %', data: [65, 10, 12, 13], backgroundColor: '#3B82F6' }
+                ]
+            }, options: { ...commonOptions, scales: { x: { stacked: false } } }
+        });
+
     </script>
 </body>
 </html>
